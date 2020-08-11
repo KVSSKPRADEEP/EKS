@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Service   
+metadata:
+  name: mydatabase
+  labels:
+    app: mydatabase
+  namespace: ekscluster11
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: mydatabase
+    tier: mysql
+  clusterIP: None
+---
+apiVersion: apps/v1 
+kind: Deployment
+metadata:
+  name: mydatabase
+  labels:
+    app: mydatabase
+  namespace: ekscluster11
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: mydatabase
+      tier: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: database
+        tier: mysql
+    spec:
+      containers:
+      - image: mysql:5.6
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-pass
+              key: password
+        - name: MYSQL_DATABASE
+          value: "webpage"
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-efs  
